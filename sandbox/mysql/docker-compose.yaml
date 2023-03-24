@@ -1,0 +1,18 @@
+#docker-compose.yaml
+version: "3"
+services:
+  mysql:
+    image: mysql:5.7
+    container_name: shopping_cart_mysql
+    restart: always
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci --skip_character_set_client_handshake --default_time_zone='+0:00'
+    environment:
+      MYSQL_ROOT_PASSWORD: abc123
+      MYSQL_DATABASE: shopping_cart
+    ports:
+      - "4000:3306"
+    volumes:
+      - shopping_cart_data_volume:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+volumes:
+  shopping_cart_data_volume:
