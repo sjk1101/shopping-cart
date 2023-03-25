@@ -19,6 +19,7 @@ func NewController(in ctrlIn) ctrlOut {
 			in: in,
 			out: ctrlOut{
 				ProductCtrl: newProductController(in),
+				AdminCtrl:   newAdminController(in),
 			},
 		}
 	})
@@ -40,4 +41,5 @@ type ctrlIn struct {
 type ctrlOut struct {
 	dig.Out
 	ProductCtrl ProductControllerInterface
+	AdminCtrl   AdminControllerInterface
 }

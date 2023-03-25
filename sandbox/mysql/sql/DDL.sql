@@ -1,11 +1,24 @@
 DROP TABLE IF EXISTS `product`;
 CREATE TABLE IF NOT EXISTS `product` (
-    `id` INT NOT NULL COMMENT 'PK',
+    `id` BIGINT NOT NULL COMMENT 'ID',
     `name` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '產品名稱',
     `amount` INT NOT NULL  DEFAULT 0 COMMENT '產品價格',
     `inventory` INT NOT NULL COMMENT '庫存',
     `image` VARCHAR(255) NOT NULL COMMENT '圖片路徑',
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '建立時間',
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '更新時間',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`) USING BTREE,
     ) COMMENT = '產品';
+
+DROP TABLE IF EXISTS `admin_user`;
+CREATE TABLE IF NOT EXISTS `admin_user` (
+    `id` BIGINT NOT NULL COMMENT 'ID',
+    `account` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '管理者account',
+    `name` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '管理者名稱',
+    `password` VARCHAR(128) NOT NULL COMMENT '管理者密碼',
+    `salt` VARCHAR(36) NOT NULL COMMENT '加密金鑰',
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '建立時間',
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '更新時間',
+    PRIMARY KEY (`id`) USING BTREE,
+    UNIQUE INDEX `idx_account` (`account`) USING BTREE,
+    ) COMMENT = '管理者';
