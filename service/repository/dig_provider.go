@@ -17,6 +17,7 @@ func NewRepository(in repositoryIn) repositoryOut {
 			in: in,
 			out: repositoryOut{
 				ProductRepo: newProductRepository(in),
+				OrderRepo:   newOrderRepository(in),
 			},
 		}
 	})
@@ -37,4 +38,5 @@ type repositoryOut struct {
 	dig.Out
 
 	ProductRepo ProductRepositoryInterface
+	OrderRepo   OrderRepositoryInterface
 }

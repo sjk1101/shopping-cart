@@ -25,6 +25,7 @@ func InitShoppingCart(app ShoppingCartApp) {
 type ShoppingCartApp struct {
 	dig.In
 	ProductCtrl controller.ProductControllerInterface
+	OrderCtrl   controller.OrderControllerInterface
 }
 
 func Run() {
@@ -48,6 +49,7 @@ func setRoutes(engine *gin.Engine) {
 
 func setPublicRoutes(engine *gin.Engine) {
 	engine.GET("products", shoppingCartApp.ProductCtrl.Get)
+	engine.POST("orders/import", shoppingCartApp.OrderCtrl.Import)
 }
 
 func setPrivateRoutes(engine *gin.Engine) {

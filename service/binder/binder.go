@@ -6,6 +6,7 @@ import (
 	"go.uber.org/dig"
 
 	"shopping-cart/service/controller"
+	"shopping-cart/service/core"
 	"shopping-cart/service/repository"
 )
 
@@ -20,6 +21,11 @@ func New() *dig.Container {
 
 		// Controller
 		if err := binder.Provide(controller.NewController); err != nil {
+			panic(err)
+		}
+
+		// Core
+		if err := binder.Provide(core.NewCore); err != nil {
 			panic(err)
 		}
 

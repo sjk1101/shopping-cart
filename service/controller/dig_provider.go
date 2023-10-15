@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"shopping-cart/service/core"
 	"sync"
 
 	"go.uber.org/dig"
@@ -19,6 +20,7 @@ func NewController(in ctrlIn) ctrlOut {
 			in: in,
 			out: ctrlOut{
 				ProductCtrl: newProductController(in),
+				OrderCtrl:   newOrderController(in),
 			},
 		}
 	})
@@ -35,9 +37,11 @@ type ctrlIn struct {
 	dig.In
 
 	ProductRepo repository.ProductRepositoryInterface
+	OrderCore   core.OrderCoreInterface
 }
 
 type ctrlOut struct {
 	dig.Out
 	ProductCtrl ProductControllerInterface
+	OrderCtrl   OrderControllerInterface
 }

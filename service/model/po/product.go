@@ -3,8 +3,8 @@ package po
 import "time"
 
 type Product struct {
-	ID        int        `gorm:"column:id;type:int;comment:id"`
-	Name      string     `gorm:"column:name;type:varchar(255);comment:產品名稱"`
+	ID        int64      `gorm:"column:id;type:bigint;primary_key;NOT NULL;comment:id"`
+	Name      string     `gorm:"column:name;type:varchar(255);NOT NULL;comment:產品名稱"`
 	Amount    int        `gorm:"column:amount;type:int;comment:產品價格"`
 	Inventory int        `gorm:"column:inventory;type:int;comment:庫存"`
 	Image     string     `gorm:"column:image;type:varchar(255);comment:圖片路徑"`
