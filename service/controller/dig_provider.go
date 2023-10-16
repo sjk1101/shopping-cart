@@ -1,12 +1,11 @@
 package controller
 
 import (
-	"shopping-cart/service/core"
 	"sync"
 
-	"go.uber.org/dig"
+	"shopping-cart/service/core"
 
-	"shopping-cart/service/repository"
+	"go.uber.org/dig"
 )
 
 var (
@@ -36,12 +35,13 @@ type ctrl struct {
 type ctrlIn struct {
 	dig.In
 
-	ProductRepo repository.ProductRepositoryInterface
+	ProductCore core.ProductCoreInterface
 	OrderCore   core.OrderCoreInterface
 }
 
 type ctrlOut struct {
 	dig.Out
+
 	ProductCtrl ProductControllerInterface
 	OrderCtrl   OrderControllerInterface
 }

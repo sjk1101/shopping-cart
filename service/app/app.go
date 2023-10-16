@@ -48,8 +48,11 @@ func setRoutes(engine *gin.Engine) {
 }
 
 func setPublicRoutes(engine *gin.Engine) {
-	engine.GET("products", shoppingCartApp.ProductCtrl.Get)
+	engine.GET("products", shoppingCartApp.ProductCtrl.List)
+	engine.POST("products/import", shoppingCartApp.ProductCtrl.Import)
+
 	engine.POST("orders/import", shoppingCartApp.OrderCtrl.Import)
+	engine.GET("orders/export", shoppingCartApp.OrderCtrl.Export)
 }
 
 func setPrivateRoutes(engine *gin.Engine) {
