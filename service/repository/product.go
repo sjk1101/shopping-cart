@@ -10,6 +10,8 @@ import (
 
 type ProductRepositoryInterface interface {
 	Get(ctx context.Context, db *gorm.DB, id int) (*po.Product, error)
+	Create(ctx context.Context, db *gorm.DB, products []*po.Product) error
+	Find(ctx context.Context, db *gorm.DB) ([]*po.Product, error)
 }
 
 type productRepository struct {
@@ -22,7 +24,7 @@ func newProductRepository(in repositoryIn) ProductRepositoryInterface {
 	}
 }
 
-func (repo *productRepository) Get(ctx context.Context, db *gorm.DB, id int,
+func (r *productRepository) Get(ctx context.Context, db *gorm.DB, id int,
 ) (*po.Product, error) {
 
 	var product po.Product
@@ -36,4 +38,25 @@ func (repo *productRepository) Get(ctx context.Context, db *gorm.DB, id int,
 	}
 
 	return &product, nil
+}
+
+func (r *productRepository) Create(ctx context.Context, db *gorm.DB, products []*po.Product) error {
+
+	if err := db.Create(products).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *productRepository) Find(ctx context.Context, db *gorm.DB) ([]*po.Product, error) {
+
+	res := []*po.Product{}
+	if err := db.Model(&po.Product{}).
+		Find(&res).
+		Error; err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }

@@ -2,15 +2,20 @@ package controller
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	"shopping-cart/service/model/bo"
+
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
 	"github.com/xuri/excelize/v2"
-	"shopping-cart/service/model/po"
-	"time"
 )
 
 type OrderControllerInterface interface {
 	Import(ctx *gin.Context)
+	Export(ctx *gin.Context)
 }
 
 type orderController struct {
@@ -27,43 +32,71 @@ func (ctrl *orderController) Import(ctx *gin.Context) {
 
 	file, _, err := ctx.Request.FormFile("file")
 	if err != nil {
+		ctx.JSON(400, err.Error())
 		return
 	}
 
 	xls, err := excelize.OpenReader(file)
 	if err != nil {
+		ctx.JSON(400, err.Error())
 		return
 	}
+
 	rows, err := xls.GetRows(xls.GetSheetName(xls.GetActiveSheetIndex()))
+	if err != nil {
+		ctx.JSON(400, err.Error())
+		return
+	}
 
 	orders, err := ctrl.transfer(rows)
 	if err != nil {
-		panic(err)
+		ctx.JSON(400, err.Error())
+		return
 	}
+
 	if err := ctrl.in.OrderCore.Insert(ctx, orders); err != nil {
-		panic(err)
+		ctx.JSON(400, err.Error())
+		return
 	}
 
 	ctx.JSON(200, "OK")
 }
 
-func (ctrl *orderController) transfer(rows [][]string) ([]*po.ShopeeCompletedOrder, error) {
-	orderMap := make(map[string]*po.ShopeeCompletedOrder)
+func (ctrl *orderController) Export(ctx *gin.Context) {
+
+	res, err := ctrl.in.OrderCore.Export(ctx)
+	if err != nil {
+		ctx.JSON(400, err.Error())
+		return
+	}
+
+	file, _ := res.WriteToBuffer()
+	ctx.Header("Content-Description", "File Transfer")
+	ctx.Header("Content-Disposition",
+		fmt.Sprintf(
+			"attachment; filename=shopee_statistics_%s.xlsx",
+			time.Now().UTC().Format("20060102150405")))
+
+	ctx.Data(200, "application/octet-stream", file.Bytes())
+}
+
+func (ctrl *orderController) transfer(rows [][]string) ([]*bo.ShopeeOrderDetail, error) {
+	details := []*bo.ShopeeOrderDetail{}
 	for rIndex, row := range rows {
 		if rIndex == 0 {
 			continue
 		}
 
 		// 按Shopee給的excel格式（是訂單編號Ｘ品項）
-		completeOrder := &po.ShopeeCompletedOrder{}
+		detail := &bo.ShopeeOrderDetail{}
 		for cIndex, data := range row {
 			// 訂單編號
 			if cIndex == 0 {
-				completeOrder.OrderID = data
+				detail.OrderID = data
 			}
 			// 訂單狀態
 			if cIndex == 1 {
-				completeOrder.IsEstablished = data == "完成"
+				detail.IsEstablished = data == "完成"
 			}
 
 			// 訂單成立日期
@@ -74,7 +107,7 @@ func (ctrl *orderController) transfer(rows [][]string) ([]*po.ShopeeCompletedOrd
 				if err != nil {
 					return nil, fmt.Errorf("set order created(%d_%d) at err:%v", rIndex, cIndex, err)
 				}
-				completeOrder.OrderCreatedAt = date
+				detail.OrderCreatedAt = date
 			}
 
 			// 賣場優惠券
@@ -83,7 +116,7 @@ func (ctrl *orderController) transfer(rows [][]string) ([]*po.ShopeeCompletedOrd
 				if err != nil {
 					return nil, fmt.Errorf("set coupon discount(%d_%d) err:%v", rIndex, cIndex, err)
 				}
-				completeOrder.CouponDiscount = couponDiscount
+				detail.CouponDiscount = couponDiscount
 			}
 
 			// 成交手續費
@@ -92,7 +125,7 @@ func (ctrl *orderController) transfer(rows [][]string) ([]*po.ShopeeCompletedOrd
 				if err != nil {
 					return nil, fmt.Errorf("set deal fee(%d_%d)  err:%v", rIndex, cIndex, err)
 				}
-				completeOrder.DealFee = dealFee
+				detail.DealFee = dealFee
 			}
 
 			// 活動服務費
@@ -101,16 +134,26 @@ func (ctrl *orderController) transfer(rows [][]string) ([]*po.ShopeeCompletedOrd
 				if err != nil {
 					return nil, fmt.Errorf("set activity fee(%d_%d) err:%v", rIndex, cIndex, err)
 				}
-				completeOrder.ActivityFee = activityFee
+				detail.ActivityFee = activityFee
 			}
 
 			// 金流服務費
-			if cIndex == 19 {
+			if cIndex == 20 {
 				cashFlowCost, err := decimal.NewFromString(data)
 				if err != nil {
 					return nil, fmt.Errorf("set cash flow cost(%d_%d) err:%v", rIndex, cIndex, err)
 				}
-				completeOrder.CashFlowCost = cashFlowCost
+				detail.CashFlowCost = cashFlowCost
+			}
+
+			// 商品名稱
+			if cIndex == 23 {
+				detail.Product = strings.ReplaceAll(data, "🔥", "")
+			}
+
+			// 商品選項名稱
+			if cIndex == 24 {
+				detail.Product = detail.Product + "," + data
 			}
 
 			// 商品金額
@@ -119,11 +162,20 @@ func (ctrl *orderController) transfer(rows [][]string) ([]*po.ShopeeCompletedOrd
 				if err != nil {
 					return nil, fmt.Errorf("set price(%d_%d) err:%v", rIndex, cIndex, err)
 				}
-				completeOrder.Price = completeOrder.Price.Add(price)
+				detail.Price = price
+			}
+
+			// 商品數量
+			if cIndex == 29 {
+				q, err := strconv.Atoi(data)
+				if err != nil {
+					return nil, fmt.Errorf("set quantity(%d_%d) err:%v", rIndex, cIndex, err)
+				}
+				detail.Quantity = q
 			}
 
 			// 訂單完成才會有日期
-			if completeOrder.IsEstablished {
+			if detail.IsEstablished {
 				// 訂單完成日期
 				if cIndex == 47 {
 					a := fmt.Sprintf("%s:00", data)
@@ -131,28 +183,13 @@ func (ctrl *orderController) transfer(rows [][]string) ([]*po.ShopeeCompletedOrd
 					if err != nil {
 						return nil, fmt.Errorf("set order completed At(%d_%d) at err:%v", rIndex, cIndex, err)
 					}
-					completeOrder.OrderCompletedAt = &date
-
-					// 撥款日
-					allocate := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
-					completeOrder.AllocateAt = &allocate
+					detail.OrderCompletedAt = &date
 				}
 			}
 		}
 
-		// 是否已有此筆訂單編號紀錄
-		obj, ok := orderMap[completeOrder.OrderID]
-		if !ok {
-			orderMap[completeOrder.OrderID] = completeOrder
-		} else {
-			obj.Price = obj.Price.Add(completeOrder.Price)
-		}
+		details = append(details, detail)
 	}
 
-	completeOrders := []*po.ShopeeCompletedOrder{}
-	for _, v := range orderMap {
-		completeOrders = append(completeOrders, v)
-	}
-
-	return completeOrders, nil
+	return details, nil
 }

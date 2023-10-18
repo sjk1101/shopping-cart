@@ -18,7 +18,8 @@ func NewCore(in coreIn) coreOut {
 		self = &core{
 			in: in,
 			out: coreOut{
-				OrderCore: newOrderCore(in),
+				OrderCore:   newOrderCore(in),
+				ProductCore: newProductCore(in),
 			},
 		}
 	})
@@ -34,11 +35,13 @@ type core struct {
 type coreIn struct {
 	dig.In
 
-	OrderRepo repository.OrderRepositoryInterface
+	OrderRepo   repository.OrderRepositoryInterface
+	ProductRepo repository.ProductRepositoryInterface
 }
 
 type coreOut struct {
 	dig.Out
 
-	OrderCore OrderCoreInterface
+	OrderCore   OrderCoreInterface
+	ProductCore ProductCoreInterface
 }
