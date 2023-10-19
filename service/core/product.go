@@ -7,6 +7,8 @@ import (
 	"shopping-cart/service/model/dto"
 	"shopping-cart/service/model/po"
 	"shopping-cart/service/thirdparty/database"
+
+	"gorm.io/gorm"
 )
 
 type ProductCoreInterface interface {
@@ -49,7 +51,10 @@ func (c *productCore) Insert(ctx context.Context, products []*bo.Product) error 
 func (c *productCore) List(ctx context.Context) ([]*dto.ProductResp, error) {
 
 	db := database.Session()
-	poProducts, err := c.in.ProductRepo.Find(ctx, db)
+	poProducts, err := c.in.ProductRepo.Find(ctx, db,
+		func(tx *gorm.DB) *gorm.DB {
+			return tx
+		})
 	if err != nil {
 		return nil, err
 	}

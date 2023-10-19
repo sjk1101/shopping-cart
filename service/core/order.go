@@ -39,7 +39,10 @@ func (c *orderCore) Insert(ctx context.Context, details []*bo.ShopeeOrderDetail)
 	orderMap := make(map[string]*po.ShopeeOrder)
 	orderDetails := []*po.ShopeeOrderDetail{}
 
-	products, err := c.in.ProductRepo.Find(ctx, db)
+	products, err := c.in.ProductRepo.Find(ctx, db,
+		func(tx *gorm.DB) *gorm.DB {
+			return tx
+		})
 	if err != nil {
 		return err
 	}
